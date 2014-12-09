@@ -3,6 +3,7 @@
 	<name>PhoneConnect</name>
 	<comment></comment>
 	<projects>
+		<project>DroneServer</project>
 	</projects>
 	<buildSpec>
 		<buildCommand>

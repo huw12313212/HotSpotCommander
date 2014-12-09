@@ -1,41 +1,26 @@
 package com.example.phoneconnect;
 
-import java.io.BufferedReader;
-import java.io.BufferedWriter;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.OutputStreamWriter;
-import java.io.PrintWriter;
 import java.net.Socket;
-import java.net.UnknownHostException;
 
-
+import HotSpotCommander.HotSpotClientEventHandler;
+import HotSpotCommander.HotSpotClientInterface;
+import HotSpotCommander.HotSpotTCPClient;
 import android.content.Context;
 import android.net.DhcpInfo;
 import android.net.wifi.WifiManager;
 import android.os.Bundle;
-import android.os.Handler;
 import android.support.v7.app.ActionBarActivity;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
-import android.widget.Button;
 import android.widget.TextView;
 
 
 public class MainActivity extends ActionBarActivity {
 	
- 
-    public String   s_gateway;  
-    public String   s_ipAddress;    
-    DhcpInfo d;
-    WifiManager wifii;
-    
-	private Socket socket;
-	private static final int SERVERPORT = 5566;
-	private static String SERVER_IP = "";
+  
+	HotSpotClientInterface client;
 	TextView wifiText;
-	Handler updateConversationHandler;
 	
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -44,24 +29,52 @@ public class MainActivity extends ActionBarActivity {
         
         wifiText = (TextView)this.findViewById(R.id.wifiText);
         
+
+        String ip = getAccessPointIP();
+        wifiText.setText("\n Connect to"+ip);
+
         
+        client = new HotSpotTCPClient();
+        client.RegisterHandler(new HotSpotClientEventHandler(){
+
+			@Override
+			public void OnConnected(Socket server) {
+				// TODO Auto-generated method stub
+				
+				wifiText.append("\n"+server.getInetAddress()+" server connected");
+			}
+
+			@Override
+			public void OnDisconnected(Socket server) {
+				// TODO Auto-generated method stub
+				
+			}
+
+			@Override
+			public void OnReceiveMessage(Socket server, String message) {
+				// TODO Auto-generated method stub
+				wifiText.append("\n"+server.getInetAddress()+":"+message);
+			}});
+
+        
+        try {
+			client.Connect(ip, 5566);
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+    }
+    
+    private String getAccessPointIP()
+    {
+        DhcpInfo d;
+        WifiManager wifii;
         
         wifii= (WifiManager) getSystemService(Context.WIFI_SERVICE);
         d=wifii.getDhcpInfo();
-        s_gateway="Default Gateway: "+intToIp(d.gateway);    
-        s_ipAddress="IP Address: "+intToIp(d.ipAddress); 
+        String ip = intToIp(d.gateway);
         
-        SERVER_IP = intToIp(d.gateway);
-
-        //dispaly them
-        wifiText.setText("\n"+s_ipAddress+"\n" +s_gateway);
-        
-        Button b = (Button)this.findViewById(R.id.button1);
-       // b.on
-        
-        updateConversationHandler = new Handler();
-        
-        new Thread(new ClientThread()).start();
+        return ip;
     }
 
     public String intToIp(int i) {
@@ -73,87 +86,13 @@ public class MainActivity extends ActionBarActivity {
     	}
 
     
-	class CommunicationThread implements Runnable {
-
-		private Socket serverSocket;
-		private BufferedReader input;
-		public CommunicationThread(Socket clientSocket) {
-
-			this.serverSocket = clientSocket;
-
-			try {
-
-				this.input = new BufferedReader(new InputStreamReader(this.serverSocket.getInputStream()));
-
-			} catch (IOException e) {
-				e.printStackTrace();
-			}
-		}
-		public void run() {
-
-			while (!Thread.currentThread().isInterrupted()) {
-
-				try {
-					String read = input.readLine();
-					updateConversationHandler.post(new updateUIThread(read));
-
-				} catch (IOException e) {
-					e.printStackTrace();
-				}
-			}
-		}
-	}
-	
-	class updateUIThread implements Runnable {
-		private String msg;
-
-		public updateUIThread(String str) {
-			this.msg = str;
-		}
-
-		@Override
-		public void run() {
-			 wifiText.setText(wifiText.getText()+"\n"+"Client Says: "+ msg);
-		}
-	}
-    
     public void onClick(View view) {
-		try {
-			//EditText et = (EditText) findViewById(R.id.EditText01);
-			String str = "test";
-			PrintWriter out = new PrintWriter(new BufferedWriter(
-					new OutputStreamWriter(socket.getOutputStream())),
-					true);
-			out.println(str);
-		} catch (UnknownHostException e) {
-			e.printStackTrace();
-		} catch (IOException e) {
-			e.printStackTrace();
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
+
+    	
+    	if(client.IsConnected())
+			client.SendMessage("hello world");
 	}
     
-    class ClientThread implements Runnable {
-
-		@Override
-		public void run() {
-
-			try {
-
-				socket = new Socket(SERVER_IP, SERVERPORT);
-				
-				CommunicationThread commThread = new CommunicationThread(socket);
-				new Thread(commThread).start();
-
-			} catch (UnknownHostException e1) {
-				e1.printStackTrace();
-			} catch (IOException e1) {
-				e1.printStackTrace();
-			}
-
-		}
-	}
 
     
     @Override
