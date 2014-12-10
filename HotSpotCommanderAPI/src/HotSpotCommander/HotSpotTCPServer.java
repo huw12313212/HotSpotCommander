@@ -126,7 +126,11 @@ public class HotSpotTCPServer implements HotSpotServerInterface {
 					
 					if(read == null)
 					{
-						disconnectHandler.post(new removeSocketRunnable(this.clientSocket));
+						
+						if(IsConnected())
+						{
+							disconnectHandler.post(new removeSocketRunnable(this.clientSocket));
+						}
 						
 						Thread.currentThread().interrupt();
 					}
@@ -137,7 +141,11 @@ public class HotSpotTCPServer implements HotSpotServerInterface {
 
 				} catch (IOException e) {
 					
-					disconnectHandler.post(new removeSocketRunnable(this.clientSocket));
+					
+					if(IsConnected())
+					{
+						disconnectHandler.post(new removeSocketRunnable(this.clientSocket));
+					}
 					
 					Thread.currentThread().interrupt();
 					
@@ -151,6 +159,8 @@ public class HotSpotTCPServer implements HotSpotServerInterface {
 	
 	private void ClearAllState() throws IOException
 	{
+		listening = false;
+		
 		if(this.serverThread!=null)
 		{
 			this.serverThread.interrupt();
@@ -177,7 +187,6 @@ public class HotSpotTCPServer implements HotSpotServerInterface {
 			serverSocket.close();
 		}
 		
-	   
 		
 		uiHandler = null;
 	}
@@ -192,7 +201,7 @@ public class HotSpotTCPServer implements HotSpotServerInterface {
 			e.printStackTrace();
 		}
 		
-		listening = false;
+
 	}
 
 	@Override
@@ -304,13 +313,15 @@ public class HotSpotTCPServer implements HotSpotServerInterface {
 		@Override
 		public void run() 
 		{
-			clients.remove(client);
-			printWriters.get(client).close();
-			printWriters.remove(client);
-			threads.get(client).interrupt();
-			threads.remove(client);
+			if(!IsConnected())return;
+
+				clients.remove(client);
+				printWriters.get(client).close();
+				printWriters.remove(client);
+				threads.get(client).interrupt();
+				threads.remove(client);
 			
-			uiHandler.post(new disconnectRunnable(client));
+				uiHandler.post(new disconnectRunnable(client));
 		}
 	}
 	

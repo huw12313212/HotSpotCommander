@@ -13,5 +13,6 @@ public interface HotSpotClientInterface {
 	public void SendMessage(String message);
 	
 	public boolean IsConnected();
+	public boolean IsConnecting();
 	
 }

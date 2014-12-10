@@ -18,6 +18,7 @@ public class HotSpotTCPClient implements HotSpotClientInterface {
 
     int serverPort = 5566;
     Handler uiHandler;
+    Handler disconnectHandler;
     Socket clientSocket;
     String serverIP;
     PrintWriter pw;
@@ -28,22 +29,26 @@ public class HotSpotTCPClient implements HotSpotClientInterface {
     
     
     boolean isConnected = false;
+    boolean isConnecting = false;
 	
 	@Override
 	public void Connect(String ip, int port) throws Exception {
 		// TODO Auto-generated method stub
 		
-		if(isConnected)throw new Exception("is already connected ?");
+		if(isConnecting)throw new Exception("is already connected ?");
 		ClearAllState();
 		
-		isConnected = true;
+		isConnecting = true;
+		
 		serverIP = ip;
 		serverPort = port;
 		
 		uiHandler = new Handler(Looper.getMainLooper());	
+		disconnectHandler = new Handler();
 		
 		clientTrhead = new Thread(new ClientThread());
 		clientTrhead.start();
+		
 		
 	}
 	
@@ -54,13 +59,13 @@ public class HotSpotTCPClient implements HotSpotClientInterface {
 		public void run() {
 
 			try {
-
+				
 				clientSocket = new Socket(serverIP, serverPort);
 				pw = new PrintWriter(new BufferedWriter(
 						new OutputStreamWriter(clientSocket.getOutputStream())),
 						true);
 				
-				
+				isConnected = true;
 				uiHandler.post(new connectionRunnable(clientSocket));
 				
 				
@@ -101,15 +106,64 @@ public class HotSpotTCPClient implements HotSpotClientInterface {
 
 				try {
 					String read = input.readLine();
-					uiHandler.post(new receiveMessageRunnable(read));
+					
+					if(read == null)
+					{
+						disconnectHandler.post(new removeSocketEvent(this.serverSocket));
+						Thread.currentThread().interrupt();
+						
+					}
+					else
+					{
+						uiHandler.post(new receiveMessageRunnable(read));
+					}
 
 				} catch (IOException e) {
+					
+					disconnectHandler.post(new removeSocketEvent(this.serverSocket));
+					Thread.currentThread().interrupt();
+					
 					e.printStackTrace();
 				}
 			}
 		}
 	}
 	
+	class removeSocketEvent implements Runnable 
+	{
+		private Socket server;
+		
+		public removeSocketEvent(Socket s) {
+			this.server = s;
+		}
+
+		@Override
+		public void run() {
+			
+			ClearAllState();
+			
+			
+			uiHandler.post(new disconnectedSocketRunnable(server));
+		}
+	}
+	
+	class disconnectedSocketRunnable implements Runnable 
+	{
+		private Socket server;
+		
+		public disconnectedSocketRunnable(Socket s) {
+			this.server = s;
+		}
+
+		@Override
+		public void run() {
+			
+			for(HotSpotClientEventHandler e : eventHandlers)
+			{
+				e.OnDisconnected(server);
+			}
+		}
+	}
 	
 	class receiveMessageRunnable implements Runnable 
 	{
@@ -149,16 +203,16 @@ public class HotSpotTCPClient implements HotSpotClientInterface {
 	
 	private void ClearAllState()
 	{
-		if(clientSocket!=null)
+
+		isConnected = false;
+		isConnecting = false;
+		
+		if(clientTrhead!=null)
 		{
-			try {
-				clientSocket.close();
-			} catch (IOException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
-			clientSocket = null;
+			clientTrhead.interrupt();
+			clientTrhead = null;
 		}
+		
 		
 		if(communicationThread!=null)
 		{
@@ -172,22 +226,28 @@ public class HotSpotTCPClient implements HotSpotClientInterface {
 			pw = null;
 		}
 		
-		if(clientTrhead!=null)
+		if(clientSocket!=null)
 		{
-			clientTrhead.interrupt();
-			clientTrhead = null;
+			try {
+				clientSocket.close();
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+			clientSocket = null;
 		}
 		
-		uiHandler = null;
+	
+		
+		
+		
 	}
 
 	@Override
 	public void Disconnect() {
 		// TODO Auto-generated method stub
-		
+
 		ClearAllState();
-		
-		isConnected = false;
 		
 	}
 
@@ -200,7 +260,11 @@ public class HotSpotTCPClient implements HotSpotClientInterface {
 	@Override
 	public void SendMessage(String message) {
 		// TODO Auto-generated method stub
-		pw.println(message);
+		if(pw!=null)
+		{
+			pw.println(message);
+		}
+		
 	}
 
 	@Override
@@ -222,6 +286,12 @@ public class HotSpotTCPClient implements HotSpotClientInterface {
 	public void ClearHandler() {
 		// TODO Auto-generated method stub
 		eventHandlers.clear();
+	}
+
+	@Override
+	public boolean IsConnecting() {
+		//isConnecting = true
+		return isConnecting;
 	}
 
 

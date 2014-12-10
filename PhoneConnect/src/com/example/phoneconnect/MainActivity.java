@@ -1,6 +1,8 @@
 package com.example.phoneconnect;
 
 import java.net.Socket;
+import java.util.ArrayList;
+import java.util.List;
 
 import HotSpotCommander.HotSpotClientEventHandler;
 import HotSpotCommander.HotSpotClientInterface;
@@ -14,6 +16,8 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.WindowManager;
+import android.widget.Button;
+import android.widget.EditText;
 import android.widget.TextView;
 
 
@@ -22,6 +26,14 @@ public class MainActivity extends ActionBarActivity {
   
 	HotSpotClientInterface client;
 	TextView wifiText;
+	TextView textEvents;
+	Button connectButton;
+	Button disconnectButton;
+	Button sendButton;
+	EditText editText;
+	
+	final int EVENT_COUNT = 10;
+	List<String> eventList = new ArrayList<String>();
 	
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -29,7 +41,12 @@ public class MainActivity extends ActionBarActivity {
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
         setContentView(R.layout.activity_main);
         
-        wifiText = (TextView)this.findViewById(R.id.wifiText);
+        wifiText = (TextView)this.findViewById(R.id.textWifi);
+        textEvents = (TextView)this.findViewById(R.id.textEvent);
+        connectButton = (Button)this.findViewById(R.id.buttonConnect);
+        disconnectButton = (Button)this.findViewById(R.id.buttonDisconnect);
+        sendButton = (Button)this.findViewById(R.id.buttonSend);
+        editText = (EditText)this.findViewById(R.id.editText);
         
 
         String ip = getAccessPointIP();
@@ -43,29 +60,55 @@ public class MainActivity extends ActionBarActivity {
 			public void OnConnected(Socket server) {
 				// TODO Auto-generated method stub
 				
-				wifiText.append("\n"+server.getInetAddress()+" server connected");
+				addEvent(server.getInetAddress()+" Connected");
 			}
 
 			@Override
 			public void OnDisconnected(Socket server) {
 				// TODO Auto-generated method stub
-				
+
+				addEvent(server.getInetAddress()+" Disconnected");
 			}
 
 			@Override
 			public void OnReceiveMessage(Socket server, String message) {
 				// TODO Auto-generated method stub
-				wifiText.append("\n"+server.getInetAddress()+":"+message);
+				
+				addEvent(server.getInetAddress()+":"+message);
 			}});
-
         
-        try {
-			client.Connect(ip, 5566);
-		} catch (Exception e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
+    	UpdateView();
+
     }
+    
+    int eventCounter = 0;
+    
+    private void addEvent(String str)
+    {
+    	eventList.add(eventCounter+++":"+str);
+    	if(eventList.size()> EVENT_COUNT)eventList.remove(0);
+    	
+    	UpdateView();
+    }
+    
+    private void UpdateView()
+    {
+    	String eventText = "";
+    	
+    	for(String s : eventList)
+    	{
+    		eventText += s+"\n";
+    	}
+    	
+    	this.wifiText.setText("Connected:"+this.client.IsConnected());
+    	this.textEvents.setText(eventText);
+    	
+    	this.connectButton.setEnabled(!this.client.IsConnecting());
+    	this.disconnectButton.setEnabled(this.client.IsConnecting());
+    	this.sendButton.setEnabled(this.client.IsConnected());
+    	
+    }
+    
     
     private String getAccessPointIP()
     {
@@ -88,11 +131,41 @@ public class MainActivity extends ActionBarActivity {
     	}
 
     
-    public void onClick(View view) {
-
-    	
+    public void onSendClick(View view) 
+    {	
     	if(client.IsConnected())
-			client.SendMessage("hello world");
+    	{
+			client.SendMessage(editText.getText().toString());
+    	}
+    	
+    	UpdateView();
+	}
+    
+    public void onConnectClick(View view) {
+
+    	if(!client.IsConnected())
+    	{
+    	try {
+			client.Connect(getAccessPointIP(),5566);
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+    	}
+    	
+
+    	UpdateView();
+	}
+    
+    public void onDisconnectClick(View view) {
+
+    	if(client.IsConnecting()||client.IsConnected())
+    	{
+			client.Disconnect();
+    	}
+    	
+
+    	UpdateView();
 	}
     
 	@Override
@@ -100,6 +173,7 @@ public class MainActivity extends ActionBarActivity {
 		super.onStop();
 		
 		client.Disconnect();
+		addEvent("Client Disconnected");
 		
 	}
     
