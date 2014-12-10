@@ -1091,19 +1091,23 @@ containing a value of this type.
         public static final int action_menu_divider=0x7f070016;
         public static final int action_menu_presenter=0x7f070017;
         public static final int action_mode_close_button=0x7f070024;
-        public static final int action_settings=0x7f07003e;
+        public static final int action_settings=0x7f070042;
         public static final int activity_chooser_view_content=0x7f070025;
         public static final int always=0x7f07000b;
         public static final int beginning=0x7f070011;
-        public static final int button1=0x7f07003d;
+        public static final int buttonDisconnect=0x7f07003f;
+        public static final int buttonSend=0x7f07003d;
+        public static final int buttonStart=0x7f07003e;
         public static final int checkbox=0x7f07002d;
         public static final int collapseActionView=0x7f07000d;
         public static final int default_activity_button=0x7f070028;
         public static final int dialog=0x7f07000e;
         public static final int disableHome=0x7f070008;
         public static final int dropdown=0x7f07000f;
+        public static final int editText=0x7f07003c;
         public static final int edit_query=0x7f070030;
         public static final int end=0x7f070013;
+        public static final int eventsText=0x7f070040;
         public static final int expand_activities_button=0x7f070026;
         public static final int expanded_menu=0x7f07002c;
         public static final int home=0x7f070014;
@@ -1137,11 +1141,11 @@ containing a value of this type.
         public static final int split_action_bar=0x7f07001e;
         public static final int submit_area=0x7f070039;
         public static final int tabMode=0x7f070002;
+        public static final int textWifi=0x7f070041;
         public static final int title=0x7f07002b;
         public static final int top_action_bar=0x7f070020;
         public static final int up=0x7f070021;
         public static final int useLogo=0x7f070003;
-        public static final int wifiText=0x7f07003c;
         public static final int withText=0x7f07000c;
     }
     public static final class integer {

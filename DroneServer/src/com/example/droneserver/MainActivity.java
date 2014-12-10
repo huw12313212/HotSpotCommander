@@ -1,6 +1,8 @@
 package com.example.droneserver;
 
 import java.net.Socket;
+import java.util.ArrayList;
+import java.util.List;
 
 import HotSpotCommander.HotSpotServerEventHandler;
 import HotSpotCommander.HotSpotServerInterface;
@@ -11,13 +13,26 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.WindowManager;
+import android.widget.Button;
+import android.widget.EditText;
 import android.widget.TextView;
 
 
 public class MainActivity extends ActionBarActivity {
 	
     TextView wifiText;
+    TextView eventsText;
+    Button buttonStart;
+    Button buttonDisconnect;
+    Button buttonSend;
+    EditText editText;
+    
     HotSpotServerInterface server;
+    
+    final int MAX_EVENT_COUNT = 10;
+    List<String> events = new ArrayList<String>();
+    
+    int eventCount = 0;
     
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -25,11 +40,16 @@ public class MainActivity extends ActionBarActivity {
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
         setContentView(R.layout.activity_main);
         
-        
-        wifiText = (TextView)this.findViewById(R.id.wifiText);
+        wifiText = (TextView)this.findViewById(R.id.textWifi);
+        eventsText = (TextView)this.findViewById(R.id.eventsText);
+        buttonStart = (Button)this.findViewById(R.id.buttonStart);
+        buttonDisconnect = (Button)this.findViewById(R.id.buttonDisconnect);
+        buttonSend = (Button)this.findViewById(R.id.buttonSend);
+        editText = (EditText)this.findViewById(R.id.editText);
         
         server = new HotSpotTCPServer();
         
+        updateView();
         
         
         server.RegisterHandler(new HotSpotServerEventHandler(){
@@ -37,30 +57,54 @@ public class MainActivity extends ActionBarActivity {
 		@Override
 		public void OnConnected(Socket client) {
 			// TODO Auto-generated method stub
-			wifiText.append("\n"+client.getInetAddress() +" Connected");
+			addEvent(client.getInetAddress() +" Connected");
 		}
 
 		@Override
 		public void OnDisconnected(Socket client) {
 			// TODO Auto-generated method stub
-			
+			addEvent(client.getInetAddress() +" Disconnected");
 		}
 
 		@Override
 		public void OnReceiveMessage(Socket client, String message) {
 			// TODO Auto-generated method stub
 			
-			wifiText.append("\n"+client.getInetAddress() +":"+message);
+			addEvent(client.getInetAddress() +":"+message);
 			
 		}});
         
-			try {
-				server.Start(5566);
-			} catch (Exception e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
+
      
+    }
+    
+    private void updateView()
+    {
+    	String eventStr = "";
+    	
+    	for(String s : events)
+    	{
+    		eventStr+=s+"\n";
+    	}
+    	
+    	eventsText.setText(eventStr);
+    	
+    	String wifiState;
+    	wifiState = "Listening:"+server.IsListening() + ", Clients:"+server.GetConnectedClients().size();
+    	
+    	wifiText.setText(wifiState);
+    	
+    	buttonStart.setEnabled(!server.IsListening());
+    	buttonSend.setEnabled(server.IsConnected());
+    	buttonDisconnect.setEnabled(server.IsListening());
+    }
+    
+    private void addEvent(String message)
+    {
+    	events.add(eventCount+++":"+message);
+    	if(events.size()>this.MAX_EVENT_COUNT)events.remove(0);
+    	
+    	updateView();
     }
 
 
@@ -92,13 +136,30 @@ public class MainActivity extends ActionBarActivity {
 		
 	}
 
-	
-	public void onClick(View view) 
+	public void onDisconnectClick(View view)
 	{
-		
+		server.Stop();
+		addEvent("Server Stop");
+	}
+	
+	public void onStartClick(View view)
+	{
+		try {
+			server.Start(5566);
+			addEvent("Server Start at port 5566");
+			
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	}
+	
+	public void onSendClick(View view) 
+	{
+		String data = editText.getText().toString();
 		if(server.IsConnected())
 		{
-			server.SendMessage("wa ha ha");
+			server.SendMessage(data);
 		}
 	}
 

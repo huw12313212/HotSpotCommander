@@ -9,20 +9,60 @@
     android:paddingTop="@dimen/activity_vertical_margin"
     tools:context="com.example.droneserver.MainActivity" >
 
-    <TextView
-        android:id="@+id/wifiText"
+    <EditText
+        android:id="@+id/editText"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="@string/hello_world" />
+        android:layout_alignParentBottom="true"
+        android:layout_marginBottom="32dp"
+        android:ems="10" >
+
+        <requestFocus />
+    </EditText>
 
     <Button
-        android:id="@+id/button1"
+        android:id="@+id/buttonSend"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_alignLeft="@+id/wifiText"
-        android:layout_below="@+id/wifiText"
-        android:layout_marginTop="16dp"
-        android:onClick="onClick"
-        android:text="Button" />
+        android:layout_alignBottom="@+id/editText"
+        android:layout_alignParentRight="true"
+        android:onClick="onSendClick"
+        android:text="Send" />
+
+    <Button
+        android:id="@+id/buttonStart"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_above="@+id/buttonSend"
+        android:layout_alignLeft="@+id/editText"
+        android:onClick="onStartClick"
+        android:text="Start" />
+
+    <Button
+        android:id="@+id/buttonDisconnect"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignBaseline="@+id/buttonStart"
+        android:layout_alignBottom="@+id/buttonStart"
+        android:layout_toRightOf="@+id/buttonStart"
+        android:onClick="onDisconnectClick"
+        android:text="Disconnect" />
+
+    <TextView
+        android:id="@+id/eventsText"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignLeft="@+id/textWifi"
+        android:layout_below="@+id/textWifi"
+        android:text="TextView" />
+
+    <TextView
+        android:id="@+id/textWifi"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignLeft="@+id/buttonStart"
+        android:layout_alignParentTop="true"
+        android:layout_marginTop="18dp"
+        android:text="TextView" />
 
 </RelativeLayout>

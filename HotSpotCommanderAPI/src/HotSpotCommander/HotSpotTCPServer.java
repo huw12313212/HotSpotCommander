@@ -22,6 +22,7 @@ public class HotSpotTCPServer implements HotSpotServerInterface {
 	ServerSocket serverSocket = null;
     Handler uiHandler = null;
     Thread serverThread = null;
+    Handler disconnectHandler;
     int serverPort = 5566;
     
 	Dictionary<Socket,Thread> threads;
@@ -45,6 +46,7 @@ public class HotSpotTCPServer implements HotSpotServerInterface {
 		
 		//uiThread?
 		uiHandler = new Handler(Looper.getMainLooper());
+		disconnectHandler = new Handler();
 		
 		
 		threads = new Hashtable<Socket,Thread>();
@@ -121,15 +123,31 @@ public class HotSpotTCPServer implements HotSpotServerInterface {
 				try {
 
 					String read = input.readLine();
-
-					uiHandler.post(new receiveMessageRunnable(read,this.clientSocket));
+					
+					if(read == null)
+					{
+						disconnectHandler.post(new removeSocketRunnable(this.clientSocket));
+						
+						Thread.currentThread().interrupt();
+					}
+					else 
+					{
+						uiHandler.post(new receiveMessageRunnable(read,this.clientSocket));
+					}
 
 				} catch (IOException e) {
+					
+					disconnectHandler.post(new removeSocketRunnable(this.clientSocket));
+					
+					Thread.currentThread().interrupt();
+					
 					e.printStackTrace();
 				}
 			}
 		}
 	}
+	
+
 	
 	private void ClearAllState() throws IOException
 	{
@@ -189,6 +207,8 @@ public class HotSpotTCPServer implements HotSpotServerInterface {
 		
 		ArrayList<Socket> list = new ArrayList<Socket>();
 		
+		if(clients == null)return list;
+		
 		for(Socket s : clients)
 		{
 			list.add(s);
@@ -201,9 +221,16 @@ public class HotSpotTCPServer implements HotSpotServerInterface {
 	public void BroadcastMessage(String message) {
 		// TODO Auto-generated method stub
 		
+		try
+		{
 		for(Socket s : clients)
 		{
 			printWriters.get(s).println(message);
+		}
+		}
+		catch(Exception e)
+		{
+			e.printStackTrace();
 		}
 	}
 
@@ -211,7 +238,14 @@ public class HotSpotTCPServer implements HotSpotServerInterface {
 	public void SendMessage(String message) {
 		// TODO Auto-generated method stub
 		
+		try
+		{
 		printWriters.get(clients.get(0)).println(message);
+		}
+		catch(Exception e)
+		{
+			e.printStackTrace();
+		}
 		
 
 	}
@@ -258,6 +292,49 @@ public class HotSpotTCPServer implements HotSpotServerInterface {
 			 }
 		}
 	}
+	
+	class removeSocketRunnable implements Runnable 
+	{
+		private Socket client;
+		
+		public removeSocketRunnable(Socket socket) {
+			this.client = socket;
+		}
+
+		@Override
+		public void run() 
+		{
+			clients.remove(client);
+			printWriters.get(client).close();
+			printWriters.remove(client);
+			threads.get(client).interrupt();
+			threads.remove(client);
+			
+			uiHandler.post(new disconnectRunnable(client));
+		}
+	}
+	
+	class disconnectRunnable implements Runnable 
+	{
+		private Socket client;
+		
+		public disconnectRunnable(Socket socket) {
+			this.client = socket;
+		}
+
+		@Override
+		public void run() 
+		{
+			 for(HotSpotServerEventHandler handler : eventHandlers)
+			 {
+				 handler.OnDisconnected(client) ;
+			 }
+		}
+	}
+	
+	
+	
+	
 
 	@Override
 	public boolean IsListening() {
