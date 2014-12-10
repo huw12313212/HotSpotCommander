@@ -13,6 +13,7 @@ import android.support.v7.app.ActionBarActivity;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.view.WindowManager;
 import android.widget.TextView;
 
 
@@ -25,6 +26,7 @@ public class MainActivity extends ActionBarActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
         setContentView(R.layout.activity_main);
         
         wifiText = (TextView)this.findViewById(R.id.wifiText);
@@ -93,7 +95,13 @@ public class MainActivity extends ActionBarActivity {
 			client.SendMessage("hello world");
 	}
     
-
+	@Override
+	protected void onStop() {
+		super.onStop();
+		
+		client.Disconnect();
+		
+	}
     
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {

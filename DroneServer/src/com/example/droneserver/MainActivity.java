@@ -10,6 +10,7 @@ import android.support.v7.app.ActionBarActivity;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.view.WindowManager;
 import android.widget.TextView;
 
 
@@ -21,11 +22,15 @@ public class MainActivity extends ActionBarActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
         setContentView(R.layout.activity_main);
+        
         
         wifiText = (TextView)this.findViewById(R.id.wifiText);
         
         server = new HotSpotTCPServer();
+        
+        
         
         server.RegisterHandler(new HotSpotServerEventHandler(){
 
@@ -82,6 +87,8 @@ public class MainActivity extends ActionBarActivity {
 	@Override
 	protected void onStop() {
 		super.onStop();
+		
+		server.Stop();
 		
 	}
 
